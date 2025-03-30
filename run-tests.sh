@@ -14,12 +14,15 @@ show_help() {
   echo "  -u, --url API_URL       Override API URL"
   echo "  -b, --build             Rebuild Docker image before running tests"
   echo "  -h, --help              Show this help message"
+  echo "  -o, --open-report       Open HTML report after tests complete"
+  echo "  -r, --report-type TYPE  Report type to open (html, coverage) (default: html)"
   echo ""
   echo "Examples:"
   echo "  ./run-tests.sh                               # Run all tests with default settings"
   echo "  ./run-tests.sh -f __tests__/public-api.test.js  # Run only public API tests"
   echo "  ./run-tests.sh -u https://staging-api.com    # Use staging API"
   echo "  ./run-tests.sh -e .env.staging              # Use staging environment variables"
+  echo "  ./run-tests.sh -o                           # Open HTML report after tests complete"
   echo ""
 }
 
@@ -28,6 +31,8 @@ TEST_FILE=""
 ENV_FILE=".env"
 BUILD=false
 API_URL=""
+OPEN_REPORT=false
+REPORT_TYPE="html"
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -48,6 +53,14 @@ while [[ $# -gt 0 ]]; do
       BUILD=true
       shift
       ;;
+    -o|--open-report)
+      OPEN_REPORT=true
+      shift
+      ;;
+    -r|--report-type)
+      REPORT_TYPE="$2"
+      shift 2
+      ;;
     -h|--help)
       show_help
       exit 0
@@ -59,6 +72,9 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+# Create reports directory if it doesn't exist
+mkdir -p reports
 
 # Load environment variables if file exists
 if [ -f "$ENV_FILE" ]; then
@@ -87,4 +103,45 @@ if [ -n "$TEST_FILE" ]; then
 else
   echo "Running all tests..."
   docker-compose run api-tests npm test
+fi
+
+# Open report if requested
+if [ "$OPEN_REPORT" = true ]; then
+  if [ "$REPORT_TYPE" = "html" ]; then
+    echo "Opening HTML test report..."
+    # Check which command to use for opening files based on OS
+    if [ "$(uname)" == "Darwin" ]; then
+      # macOS
+      open ./reports/test-report.html
+    elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
+      # Linux
+      if command -v xdg-open > /dev/null; then
+        xdg-open ./reports/test-report.html
+      else
+        echo "Cannot open report: xdg-open not found. Please open manually: ./reports/test-report.html"
+      fi
+    elif [ "$(expr substr $(uname -s) 1 10)" == "MINGW32_NT" ] || [ "$(expr substr $(uname -s) 1 10)" == "MINGW64_NT" ]; then
+      # Windows
+      start ./reports/test-report.html
+    else
+      echo "Cannot determine OS to open report. Please open manually: ./reports/test-report.html"
+    fi
+  elif [ "$REPORT_TYPE" = "coverage" ]; then
+    echo "Opening code coverage report..."
+    if [ "$(uname)" == "Darwin" ]; then
+      open ./reports/coverage/lcov-report/index.html
+    elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
+      if command -v xdg-open > /dev/null; then
+        xdg-open ./reports/coverage/lcov-report/index.html
+      else
+        echo "Cannot open report: xdg-open not found. Please open manually: ./reports/coverage/lcov-report/index.html"
+      fi
+    elif [ "$(expr substr $(uname -s) 1 10)" == "MINGW32_NT" ] || [ "$(expr substr $(uname -s) 1 10)" == "MINGW64_NT" ]; then
+      start ./reports/coverage/lcov-report/index.html
+    else
+      echo "Cannot determine OS to open report. Please open manually: ./reports/coverage/lcov-report/index.html"
+    fi
+  else
+    echo "Unknown report type: $REPORT_TYPE. Please use 'html' or 'coverage'."
+  fi
 fi 
