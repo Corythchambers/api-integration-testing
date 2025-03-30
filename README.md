@@ -9,8 +9,11 @@ A minimal test framework using Supertest and Jest for testing APIs.
 - Uses ES modules (import/export) instead of CommonJS
 - Support for testing protected routes using JWT authentication
 - Utility functions for common testing scenarios
+- **Dockerized** for consistent testing environments and easy CI/CD integration
 
 ## Installation
+
+### Standard Installation
 
 1. Clone this repository
 2. Install dependencies:
@@ -23,6 +26,16 @@ npm install
 
 ```bash
 cp .env.example .env
+```
+
+### Docker Installation
+
+1. Clone this repository
+2. Make sure Docker and Docker Compose are installed on your system
+3. Build the Docker image:
+
+```bash
+docker-compose build
 ```
 
 ## Configuration
@@ -57,6 +70,9 @@ api-integration-testing/
 │   └── test-utils.js        # Testing utilities
 ├── .env                     # Environment variables (private)
 ├── .env.example             # Example environment variables
+├── .dockerignore            # Files excluded from Docker build
+├── docker-compose.yml       # Docker Compose configuration
+├── Dockerfile               # Docker image definition
 ├── jest.config.js           # Jest configuration
 ├── package.json             # Project metadata and dependencies
 └── README.md                # Project documentation
@@ -104,6 +120,8 @@ describe("Protected API", () => {
 
 ## Running Tests
 
+### Running Tests Locally
+
 Run all tests:
 
 ```bash
@@ -114,6 +132,50 @@ Run a specific test file:
 
 ```bash
 npm test -- __tests__/public-api.test.js
+```
+
+### Running Tests with Docker
+
+Run all tests:
+
+```bash
+docker-compose up
+```
+
+Run tests with specific environment variables:
+
+```bash
+API_URL=https://staging-api.example.com docker-compose up
+```
+
+Run a specific test file:
+
+```bash
+docker-compose run api-tests npm test -- __tests__/public-api.test.js
+```
+
+### Using the Helper Script
+
+For convenience, you can use the included helper script:
+
+```bash
+# Run all tests
+./run-tests.sh
+
+# Run specific test file
+./run-tests.sh -f __tests__/public-api.test.js
+
+# Use a specific environment file
+./run-tests.sh -e .env.staging
+
+# Override API URL
+./run-tests.sh -u https://dev-api.example.com
+
+# Rebuild Docker image before running tests
+./run-tests.sh -b
+
+# Get help
+./run-tests.sh -h
 ```
 
 ## Creating Custom Authentication
